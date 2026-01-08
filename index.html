@@ -421,3 +421,38 @@
             document.getElementById('department').value = 'YOGA';
             activities = [
                 { id: 1, time: '08.05 - 08.20', description: 'Briefing dan Doa Bersama All Team' },
+                { id: 2, time: '08.20 - 11.30', description: 'Create Halaman Kategori Mesin Giling Bakso' },
+                { id: 3, time: '11.30 - 12.30', description: 'Istirahat' }
+            ];
+            renderActivities();
+        }
+
+        function clearForm() {
+            document.getElementById('reportDate').valueAsDate = new Date();
+            document.getElementById('employeeName').value = '';
+            document.getElementById('position').value = '';
+            document.getElementById('department').value = '';
+            document.getElementById('notes').value = '';
+            activities = [];
+            addActivity();
+            document.getElementById('reportResult').classList.add('hidden');
+        }
+
+        // Initialize Firebase on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                updateConnectionStatus(true);
+                loadReportsFromFirebase();
+                initApp();
+                console.log('✅ Firebase connected successfully!');
+            } catch (error) {
+                console.error('Firebase Error:', error);
+                updateConnectionStatus(false);
+                initApp();
+            }
+        });
+    </script>
+</body>
+</html>
