@@ -375,21 +375,31 @@
             const notes = document.getElementById('notes').value;
 
             const dateObj = new Date(reportDate + 'T00:00:00');
-            const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
+            const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            
+            const dayName = dayNames[dateObj.getDay()];
+            const date = dateObj.getDate();
+            const month = monthNames[dateObj.getMonth()];
+            const year = dateObj.getFullYear();
+            const formattedDate = `${dayName}, ${date} ${month} ${year}`;
 
-            let report = `TUGAS HARIAN ${formattedDate}\n\n`;
-            if (position) report += `• ${position.toUpperCase()}*\n\n`;
-            if (department) report += `${department.toUpperCase()}\n\n`;
+            let report = `LAPORAN HARIAN ${department ? department.toUpperCase() : 'IT'}\n`;
+            report += `Tanggal: ${formattedDate}\n`;
+            report += `Nama: ${employeeName || '-'}\n`;
+            report += `Posisi: ${position || '-'}\n`;
+            report += `Divisi: ${department || '-'}\n\n`;
+            report += `AKTIVITAS HARIAN\n`;
 
-            activities.filter(act => act.description.trim()).forEach((activity) => {
-                if (activity.time) report += `• ${activity.time}*\n`;
-                report += `• ${activity.description}\n`;
+            const filteredActivities = activities.filter(act => act.description.trim());
+            filteredActivities.forEach((activity, index) => {
+                const timePrefix = activity.time ? `[${activity.time}] ` : '';
+                report += `${index + 1}. ${timePrefix}${activity.description}\n`;
             });
 
-            if (notes) report += `\n${notes}\n`;
-            report += `\n────────────────────────────────────────────────\n`;
-            report += `Laporan dibuat oleh: ${employeeName || '-'}\n`;
-            report += `Dibuat pada: ${new Date().toLocaleString('id-ID')}\n`;
+            if (notes) {
+                report += `\nCATATAN:\n${notes}\n`;
+            }
 
             currentReportText = report;
             document.getElementById('reportContent').textContent = report;
@@ -415,14 +425,21 @@
         }
 
         function loadExample() {
-            document.getElementById('reportDate').value = '2026-01-02';
-            document.getElementById('employeeName').value = 'John Doe';
-            document.getElementById('position').value = 'WEB DEVELOPER';
-            document.getElementById('department').value = 'YOGA';
+            document.getElementById('reportDate').value = '2026-01-08';
+            document.getElementById('employeeName').value = 'Yoga';
+            document.getElementById('position').value = 'Web Developer';
+            document.getElementById('department').value = 'IT';
             activities = [
                 { id: 1, time: '08.05 - 08.20', description: 'Briefing dan Doa Bersama All Team' },
-                { id: 2, time: '08.20 - 11.30', description: 'Create Halaman Kategori Mesin Giling Bakso' },
-                { id: 3, time: '11.30 - 12.30', description: 'Istirahat' }
+                { id: 2, time: '08.20 - 08.55', description: 'Briefing IT' },
+                { id: 3, time: '08.55 - 11.30', description: 'Diskusi dengan Mas Nanda untuk Penanganan Website' },
+                { id: 4, time: '', description: 'Follow Up Upgrade Dedicate JH' },
+                { id: 5, time: '', description: 'Follow Up Pembayaran Upgrade Server Dedicate' },
+                { id: 6, time: '', description: 'Back Up IT Suport Kendala Lantai 2' },
+                { id: 7, time: '11.30 - 12.30', description: 'Istirahat' },
+                { id: 8, time: '12.30 - 16.00', description: 'Tambah Kategori Toples Web Futake.co.id' },
+                { id: 9, time: '', description: 'Create Halaman Toples Futake.co.id' },
+                { id: 10, time: '', description: 'Set Kategori Toples Futake.co.id' }
             ];
             renderActivities();
         }
