@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Harian + Firebase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-4">
+    
+    <div id="mainApp">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="flex items-center justify-center gap-3 mb-3">
+                    <svg class="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Laporan Harian + Firebase</h1>
+                </div>
+                <div id="connectionStatus" class="inline-block px-4 py-2 rounded-full text-sm font-medium"></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Main Form -->
+                <div class="lg:col-span-2">
+                    <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl p-8 mb-6 border border-blue-500/20">
+                        <div class="flex justify-between gap-2 mb-6 flex-wrap">
+                            <div class="flex gap-2">
+                                <button onclick="generateRandom()" class="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition shadow-lg shadow-blue-500/20">
+                                    🎲 Random
+                                </button>
+                                <button onclick="loadExample()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-500/20">
+                                    📝 Contoh
+                                </button>
+                            </div>
+                            <button onclick="clearForm()" class="px-4 py-2 text-sm bg-slate-700 text-blue-300 rounded-lg hover:bg-slate-600 transition">
+                                🗑️ Reset
+                            </button>
+                        </div>
+
+                        <!-- Info Dasar -->
+                        <div class="mb-6">
+                            <h2 class="text-xl font-semibold text-blue-300 mb-4">👤 Informasi Dasar</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-300 mb-2">📅 Tanggal</label>
+                                    <input type="date" id="reportDate" class="w-full px-4 py-2 bg-slate-700 border-2 border-slate-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-300 mb-2">👤 Nama</label>
+                                    <input type="text" id="employeeName" placeholder="Nama Anda" class="w-full px-4 py-2 bg-slate-700 border-2 border-slate-600 text-white placeholder-slate-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-300 mb-2">💼 Posisi</label>
+                                    <input type="text" id="position" placeholder="WEB DEVELOPER" class="w-full px-4 py-2 bg-slate-700 border-2 border-slate-600 text-white placeholder-slate-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-blue-300 mb-2">🏢 Divisi</label>
+                                    <input type="text" id="department" placeholder="IT, MARKETING" class="w-full px-4 py-2 bg-slate-700 border-2 border-slate-600 text-white placeholder-slate-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aktivitas -->
+                        <div class="mb-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-semibold text-blue-300">⏰ Aktivitas</h2>
+                                <button onclick="addActivity()" class="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition shadow-lg shadow-green-500/20">
+                                    ➕ Tambah
+                                </button>
+                            </div>
+                            <div id="activitiesContainer" class="space-y-2 max-h-80 overflow-y-auto pr-2"></div>
+                        </div>
+
+                        <!-- Catatan -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-blue-300 mb-2">📌 Catatan</label>
+                            <textarea id="notes" placeholder="Catatan tambahan..." rows="3" class="w-full px-4 py-2 bg-slate-700 border-2 border-slate-600 text-white placeholder-slate-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"></textarea>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="flex gap-2">
+                            <button onclick="saveReport()" class="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-lg hover:from-green-700 hover:to-emerald-700 transition shadow-lg shadow-green-500/30">
+                                💾 Simpan ke Database
+                            </button>
+                            <button onclick="generateReport()" class="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-cyan-700 transition shadow-lg shadow-blue-500/30">
+                                ✨ Generate
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Hasil Laporan -->
+                    <div id="reportResult" class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl p-8 hidden border border-blue-500/20">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-semibold text-blue-300">📄 Hasil Laporan</h2>
+                            <div class="flex gap-2">
+                                <button onclick="copyToClipboard()" class="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-500/20">
+                                    📋 Salin
+                                </button>
+                                <button onclick="downloadReport()" class="px-3 py-2 text-sm bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition shadow-lg shadow-cyan-500/20">
+                                    💾 Download
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-slate-700/50 p-4 rounded-lg border-2 border-slate-600">
+                            <pre id="reportContent" class="text-sm whitespace-pre-wrap font-mono overflow-x-auto text-blue-100"></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Database Sidebar -->
+                <div class="lg:col-span-1">
+                    <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl p-6 sticky top-4 border border-blue-500/20">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-semibold text-blue-300">🗄️ Database</h2>
+                            <button onclick="refreshReports()" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-500/20">
+                                🔄 Refresh
+                            </button>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <input type="text" id="searchInput" placeholder="🔍 Cari..." class="w-full px-3 py-2 text-sm bg-slate-700 border-2 border-slate-600 text-white placeholder-slate-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onkeyup="renderReports()">
+                        </div>
+
+                        <div class="mb-4 p-3 bg-gradient-to-r from-blue-900/50 to-cyan-900/50 rounded-lg border-2 border-blue-500/30">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-400" id="totalReports">0</div>
+                                <div class="text-xs text-blue-300">Total Laporan</div>
+                            </div>
+                        </div>
+
+                        <div id="reportsList" class="space-y-2 max-h-96 overflow-y-auto pr-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db;
+        let activities = [];
+        let reports = [];
+        let currentReportText = '';
+        let isFirebaseMode = true;
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBsqkxwL1lLlXtDj2r4oxdj5cwd1bhgsRI",
+            authDomain: "app-laporan-harian.firebaseapp.com",
+            projectId: "app-laporan-harian",
+            storageBucket: "app-laporan-harian.firebasestorage.app",
+            messagingSenderId: "467547738950",
+            appId: "1:467547738950:web:c8626e44854b396d92cb47",
+            measurementId: "G-7YYQYDCBK5"
+        };
+
+        const randomData = {
+            names: ['Budi Santoso', 'Siti Rahma', 'Andi Wijaya', 'Dewi Lestari', 'Rudi Hartono', 'Nina Permata'],
+            positions: ['WEB DEVELOPER', 'FRONTEND DEVELOPER', 'BACKEND DEVELOPER', 'UI/UX DESIGNER', 'PROJECT MANAGER', 'QA ENGINEER'],
+            departments: ['TECH', 'IT', 'ENGINEERING', 'DIGITAL', 'PRODUCT'],
+            tasks: ['Briefing dan Doa Bersama All Team', 'Meeting dengan klien', 'Develop fitur baru', 'Bug fixing', 'Code review', 'Testing', 'Deploy ke server', 'Update dokumentasi', 'Istirahat', 'Sprint planning'],
+            times: ['08.00 - 09.00', '09.00 - 10.30', '10.30 - 12.00', '13.00 - 15.00', '11.30 - 12.30']
+        };
+
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            if (connected) {
+                status.className = 'inline-block px-4 py-2 rounded-full text-sm font-medium bg-green-900/50 text-green-300 border border-green-500/30';
+                status.textContent = '🟢 Connected to Firebase';
+            } else {
+                status.className = 'inline-block px-4 py-2 rounded-full text-sm font-medium bg-yellow-900/50 text-yellow-300 border border-yellow-500/30';
+                status.textContent = '🟡 Demo Mode (LocalStorage)';
+            }
+        }
+
+        function initApp() {
+            document.getElementById('reportDate').valueAsDate = new Date();
+            addActivity();
+        }
+
+        function loadReportsFromFirebase() {
+            if (!isFirebaseMode) return;
+            db.collection('dailyReports').orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
+                reports = [];
+                snapshot.forEach((doc) => {
+                    reports.push({ id: doc.id, ...doc.data() });
+                });
+                renderReports();
+            }, (error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        function loadReportsFromLocalStorage() {
+            const stored = localStorage.getItem('dailyReports');
+            if (stored) reports = JSON.parse(stored);
+            renderReports();
+        }
+
+        function renderReports() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = reports.filter(r => 
+                (r.name || '').toLowerCase().includes(searchTerm) ||
+                (r.position || '').toLowerCase().includes(searchTerm) ||
+                (r.date || '').includes(searchTerm)
+            );
+
+            document.getElementById('totalReports').textContent = reports.length;
+            const list = document.getElementById('reportsList');
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="text-center text-slate-400 py-8">Belum ada laporan</div>';
+                return;
+            }
+
+            list.innerHTML = filtered.map((report) => `
+                <div class="bg-gradient-to-r from-slate-700 to-slate-800 p-3 rounded-lg border-2 border-slate-600 hover:border-blue-500 transition cursor-pointer shadow-lg" onclick="loadReport('${report.id}')">
+                    <div class="flex justify-between items-start mb-1">
+                        <div class="flex-1">
+                            <div class="font-semibold text-blue-300 text-sm">${report.name}</div>
+                            <div class="text-xs text-slate-400">${report.position}</div>
+                        </div>
+                        <button onclick="event.stopPropagation(); deleteReport('${report.id}')" class="text-red-400 hover:text-red-300 text-xs">🗑️</button>
+                    </div>
+                    <div class="text-xs text-slate-400">📅 ${report.date}</div>
+                    <div class="text-xs text-blue-400 mt-1">${report.activities ? report.activities.length : 0} aktivitas</div>
+                </div>
+            `).join('');
+        }
+
+        function loadReport(reportId) {
+            const report = reports.find(r => r.id === reportId);
+            if (!report) return;
+            document.getElementById('reportDate').value = report.dateRaw;
+            document.getElementById('employeeName').value = report.name;
+            document.getElementById('position').value = report.position;
+            document.getElementById('department').value = report.department;
+            document.getElementById('notes').value = report.notes || '';
+            activities = (report.activities || []).map((act, i) => ({
+                id: Date.now() + i,
+                time: act.time || '',
+                description: act.description || ''
+            }));
+            renderActivities();
+            generateReport();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function deleteReport(reportId) {
+            if (!confirm('Hapus laporan ini?')) return;
+            if (isFirebaseMode) {
+                try {
+                    await db.collection('dailyReports').doc(reportId).delete();
+                    alert('✅ Laporan berhasil dihapus!');
+                } catch (error) {
+                    alert('❌ Error: ' + error.message);
+                }
+            } else {
+                reports = reports.filter(r => r.id !== reportId);
+                localStorage.setItem('dailyReports', JSON.stringify(reports));
+                renderReports();
+            }
+        }
+
+        function refreshReports() {
+            if (isFirebaseMode) loadReportsFromFirebase();
+            else loadReportsFromLocalStorage();
+            alert('🔄 Data berhasil di-refresh!');
+        }
+
+        async function saveReport() {
+            const reportDate = document.getElementById('reportDate').value;
+            const employeeName = document.getElementById('employeeName').value;
+            const position = document.getElementById('position').value;
+            const department = document.getElementById('department').value;
+            const notes = document.getElementById('notes').value;
+
+            if (!employeeName || !position) {
+                alert('❌ Mohon isi minimal Nama dan Posisi!');
+                return;
+            }
+
+            const filteredActivities = activities.filter(act => act.description.trim() !== '');
+            if (filteredActivities.length === 0) {
+                alert('❌ Mohon tambahkan minimal 1 aktivitas!');
+                return;
+            }
+
+            const dateObj = new Date(reportDate + 'T00:00:00');
+            const formattedDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+
+            const newReport = {
+                dateRaw: reportDate,
+                date: formattedDate,
+                name: employeeName,
+                position: position,
+                department: department,
+                activities: filteredActivities.map(a => ({ time: a.time, description: a.description })),
+                notes: notes,
+                createdAt: new Date().toISOString()
+            };
+
+            if (isFirebaseMode) {
+                try {
+                    await db.collection('dailyReports').add(newReport);
+                    alert('✅ Laporan berhasil disimpan ke Firebase!');
+                    generateReport();
+                } catch (error) {
+                    alert('❌ Error: ' + error.message);
+                }
+            } else {
+                newReport.id = Date.now().toString();
+                reports.unshift(newReport);
+                localStorage.setItem('dailyReports', JSON.stringify(reports));
+                renderReports();
+                alert('✅ Laporan berhasil disimpan!');
+                generateReport();
+            }
+        }
+
+        function generateRandom() {
+            const randomDate = new Date();
+            randomDate.setDate(randomDate.getDate() - Math.floor(Math.random() * 30));
+            document.getElementById('reportDate').valueAsDate = randomDate;
+            document.getElementById('employeeName').value = randomData.names[Math.floor(Math.random() * randomData.names.length)];
+            document.getElementById('position').value = randomData.positions[Math.floor(Math.random() * randomData.positions.length)];
+            document.getElementById('department').value = randomData.departments[Math.floor(Math.random() * randomData.departments.length)];
+            
+            const numActivities = 5 + Math.floor(Math.random() * 4);
+            activities = [];
+            for (let i = 0; i < numActivities; i++) {
+                activities.push({
+                    id: Date.now() + i,
+                    time: Math.random() > 0.3 ? randomData.times[Math.floor(Math.random() * randomData.times.length)] : '',
+                    description: randomData.tasks[Math.floor(Math.random() * randomData.tasks.length)]
+                });
+            }
+            renderActivities();
+            document.getElementById('notes').value = Math.random() > 0.5 ? 'Semua tugas selesai dengan baik' : '';
+        }
+
+        function addActivity() {
+            activities.push({ id: Date.now(), time: '', description: '' });
+            renderActivities();
+        }
+
+        function removeActivity(id) {
+            activities = activities.filter(a => a.id !== id);
+            renderActivities();
+        }
+
+        function updateActivity(id, field, value) {
+            const activity = activities.find(a => a.id === id);
+            if (activity) activity[field] = value;
+        }
+
+        function renderActivities() {
+            const container = document.getElementById('activitiesContainer');
+            container.innerHTML = activities.map(activity => `
+                <div class="flex gap-2 items-start bg-slate-700/50 p-2 rounded-lg border border-slate-600">
+                    <input type="text" value="${activity.time}" onchange="updateActivity(${activity.id}, 'time', this.value)" placeholder="08.00 - 10.00" class="w-28 px-2 py-1.5 text-sm bg-slate-600 border border-slate-500 text-white placeholder-slate-400 rounded focus:ring-2 focus:ring-blue-500">
+                    <input type="text" value="${activity.description}" onchange="updateActivity(${activity.id}, 'description', this.value)" placeholder="Deskripsi..." class="flex-1 px-2 py-1.5 text-sm bg-slate-600 border border-slate-500 text-white placeholder-slate-400 rounded focus:ring-2 focus:ring-blue-500">
+                    <button onclick="removeActivity(${activity.id})" class="p-1.5 text-red-400 hover:bg-red-900/30 rounded text-sm">🗑️</button>
+                </div>
+            `).join('');
+        }
+
+        function generateReport() {
+            const reportDate = document.getElementById('reportDate').value;
+            const employeeName = document.getElementById('employeeName').value;
+            const position = document.getElementById('position').value;
+            const department = document.getElementById('department').value;
+            const notes = document.getElementById('notes').value;
+
+            const dateObj = new Date(reportDate + 'T00:00:00');
+            const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
+
+            let report = `TUGAS HARIAN ${formattedDate}\n\n`;
+            if (position) report += `• ${position.toUpperCase()}*\n\n`;
+            if (department) report += `${department.toUpperCase()}\n\n`;
+
+            activities.filter(act => act.description.trim()).forEach((activity) => {
+                if (activity.time) report += `• ${activity.time}*\n`;
+                report += `• ${activity.description}\n`;
+            });
+
+            if (notes) report += `\n${notes}\n`;
+            report += `\n────────────────────────────────────────────────\n`;
+            report += `Laporan dibuat oleh: ${employeeName || '-'}\n`;
+            report += `Dibuat pada: ${new Date().toLocaleString('id-ID')}\n`;
+
+            currentReportText = report;
+            document.getElementById('reportContent').textContent = report;
+            document.getElementById('reportResult').classList.remove('hidden');
+        }
+
+        function copyToClipboard() {
+            navigator.clipboard.writeText(currentReportText).then(() => alert('✅ Laporan berhasil disalin!'));
+        }
+
+        function downloadReport() {
+            const reportDate = document.getElementById('reportDate').value;
+            const dateStr = reportDate.split('-').reverse().join('');
+            const blob = new Blob([currentReportText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Laporan_Harian_${dateStr}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function loadExample() {
+            document.getElementById('reportDate').value = '2026-01-02';
+            document.getElementById('employeeName').value = 'John Doe';
+            document.getElementById('position').value = 'WEB DEVELOPER';
+            document.getElementById('department').value = 'YOGA';
+            activities = [
+                { id: 1, time: '08.05 - 08.20', description: 'Briefing dan Doa Bersama All Team' },
